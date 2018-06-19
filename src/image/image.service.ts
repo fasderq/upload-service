@@ -1,8 +1,10 @@
-import { Injectable } from "@nestjs/common";
+import { Injectable, HttpException, HttpCode, HttpStatus } from "@nestjs/common";
 import { ImageDto } from "./dto";
 import { read } from 'jimp';
 import { v4 as uuid } from 'uuid';
 import { ImageSize } from "..";
+import { ajv } from ".";
+import { imageSchema } from "./validation";
 
 const DefaultUploadPath = './public/images';
 const DefaultSizes: ImageSize[] = [
@@ -18,6 +20,8 @@ export class ImageService {
     readonly uploadPath: string = DefaultUploadPath;
 
     public async upload(file: ImageDto, sizes: Array<string> = []): Promise<string[]> {
+        await this.validateImageFile(file);
+
         const image = await read(file.buffer);
         const token = uuid();
         const extension = image.getExtension();
@@ -48,5 +52,14 @@ export class ImageService {
 
     protected imagepath(token: string, extension: string, size: string = 'original'): string {
         return `${this.uploadPath}/${token.substr(0, 8)}/${token}_${size}.${extension}`;
+    }
+
+    protected async validateImageFile(file: ImageDto): Promise<void> {
+        const validate = ajv.compile(imageSchema);
+        const valid = validate(file);
+        if (!valid) {
+            console.log(validate.errors);
+            throw new HttpException(validate.errors, HttpStatus.BAD_REQUEST);
+        }
     }
 }

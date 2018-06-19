@@ -1,7 +1,6 @@
-import { Controller, Post, UseInterceptors, FileInterceptor, UploadedFile } from "@nestjs/common";
+import { Controller, Post, UseInterceptors, FileInterceptor, UploadedFile, HttpCode, HttpStatus } from "@nestjs/common";
 import { ImageService } from "./image.service";
 import { ImageDto } from "./dto";
-
 
 @Controller('image')
 export class ImageController {
@@ -9,11 +8,10 @@ export class ImageController {
     constructor(private readonly imageService: ImageService) { }
 
     @Post('upload')
+    @HttpCode(HttpStatus.OK)
     @UseInterceptors(FileInterceptor('image'))
-    public async  upload(@UploadedFile() file: ImageDto) {
-        const urls = await this.imageService.upload(file);
-
-        return urls;
+    public async upload(@UploadedFile() file: ImageDto): Promise<string[]> {
+        return await this.imageService.upload(file);
     }
 
 }
